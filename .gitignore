@@ -1,0 +1,21 @@
+# Spring Boot / Java
+**/target/
+**/build/
+*.jar
+*.war
+*.ear
+.gradle
+.idea/
+*.iml
+.vscode/
+
+# Docker
+docker-compose.override.yml
+*.log
+
+# CSV data (keep CSVs, ignore generated)
+*-generated.csv
+
+# OS
+.DS_Store
+Thumbs.db
