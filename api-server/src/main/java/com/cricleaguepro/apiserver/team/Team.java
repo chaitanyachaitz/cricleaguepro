@@ -2,9 +2,10 @@ package com.cricleaguepro.apiserver.team;
 
 import com.cricleaguepro.apiserver.league.League;
 import com.cricleaguepro.apiserver.match.Match;
+import com.cricleaguepro.apiserver.player.Player;
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
-import com.fasterxml.jackson.annotation.JsonBackReference;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -27,6 +28,11 @@ public class Team {
     @JsonBackReference
     private League league;
 
+    // ADD THIS 👇 Players association
+    @OneToMany(mappedBy = "team", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @JsonManagedReference
+    private List<Player> players = new ArrayList<>();
+
     @OneToMany(mappedBy = "team1")
     @JsonManagedReference
     private List<Match> homeMatches = new ArrayList<>();
@@ -34,7 +40,6 @@ public class Team {
     @OneToMany(mappedBy = "team2")
     @JsonManagedReference
     private List<Match> awayMatches = new ArrayList<>();
-
 
     // constructors
     protected Team() {}
@@ -52,6 +57,10 @@ public class Team {
     public String getShortName() { return shortName; }
     public String getLogoUrl() { return logoUrl; }
     public League getLeague() { return league; }
+
+    // ADD THESE 👇
+    public List<Player> getPlayers() { return players; }
+    public void setPlayers(List<Player> players) { this.players = players; }
 
     public void setName(String name) { this.name = name; }
     public void setShortName(String shortName) { this.shortName = shortName; }

@@ -1,6 +1,10 @@
 package com.cricleaguepro.apiserver.player;
 
 import com.cricleaguepro.apiserver.service.CsvService;
+import com.cricleaguepro.apiserver.team.Team;
+import com.cricleaguepro.apiserver.team.TeamRepository;
+import com.cricleaguepro.apiserver.player.PlayerRepository;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -9,45 +13,47 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/players")
+@CrossOrigin(origins = "*")
 public class PlayerController {
-    private final PlayerRepository playerRepository;
-    private final CsvService csvService;
 
-    public PlayerController(PlayerRepository playerRepository, CsvService csvService) {
-        this.playerRepository = playerRepository;
-        this.csvService = csvService;
-    }
+    @Autowired
+    private PlayerRepository playerRepository;
 
-    @GetMapping
-    public List<Player> all() {
-        return playerRepository.findAll();
-    }
+    @Autowired
+    private TeamRepository teamRepository;
 
-    @PostMapping
-    public Player create(@RequestBody Player player) {
-        return playerRepository.save(player);
-    }
+    @Autowired
+    private CsvService csvService;
 
-    @GetMapping("/team/{teamId}")
-    public List<Player> byTeam(@PathVariable Long teamId) {
-        return playerRepository.findByTeamId(teamId);
-    }
+    // Upload CSV to team
+    @PostMapping("/upload/{teamId}")
+    public ResponseEntity<String> uploadPlayers(
+            @PathVariable Long teamId,
+            @RequestParam("file") MultipartFile file) {
 
-    @PostMapping("/bulk")
-    public ResponseEntity<String> bulkCreate(@RequestParam("teamId") Long teamId,
-                                             @RequestParam("file") MultipartFile csvFile) {
         try {
-            List<Player> players = csvService.parsePlayers(csvFile, teamId);
+            Team team = teamRepository.findById(teamId)
+                    .orElseThrow(() -> new RuntimeException("Team not found"));
+
+            List<Player> players = csvService.csvToPlayers(file, team);
             playerRepository.saveAll(players);
-            return ResponseEntity.ok("Imported " + players.size() + " players for team " + teamId);
+
+            return ResponseEntity.ok("Uploaded " + players.size() + " players to " + team.getName());
+
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body("Import failed: " + e.getMessage());
+            return ResponseEntity.badRequest().body("Error: " + e.getMessage());
         }
     }
 
-    @PostMapping("/bulk-json")
-    public ResponseEntity<String> bulkJsonCreate(@RequestBody List<Player> players) {
-        List<Player> saved = playerRepository.saveAll(players);
-        return ResponseEntity.ok("Imported " + saved.size() + " players");
+    // Get all players for team
+    @GetMapping("/team/{teamId}")
+    public List<Player> getTeamPlayers(@PathVariable Long teamId) {
+        return playerRepository.findByTeamId(teamId);
+    }
+
+    // Get captains/vice captains for team
+    @GetMapping("/team/{teamId}/leaders")
+    public List<Player> getTeamLeaders(@PathVariable Long teamId) {
+        return playerRepository.findCaptainsAndViceCaptainsByTeamId(teamId);
     }
 }
